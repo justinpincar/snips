@@ -1,0 +1,33 @@
+/*
+$site-background: #FCFCFC;
+
+$light-black: #333333;
+$light-blue: #1980D7;
+$light-blue-gray: #F1F6F9;
+$light-gray: #DDDDDD;
+$medium-blue-gray: #CED7DE;
+$medium-gray: #888888;
+$white: #FFFFFF;
+*/
+
+html {
+    overflow-y: scroll;
+    height: 100%;
+}
+
+body {
+  background: #FCFCFC;
+}
+
+button {
+  display: inline-block;
+  border: 1px solid black;
+  color: #333;
+  background-color: #FAF6F9;
+  padding: 3px 6px;
+  margin: 3px;
+}
+
+button:hover {
+  background-color: #CED7DE;
+}
