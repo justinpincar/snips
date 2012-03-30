@@ -11,6 +11,11 @@ $(function() {
     window.Groups = new GroupsList;
 
     window.Snip = Backbone.Model.extend({});
+    window.SnipsList = Backbone.Collection.extend({
+	    model: Snip,
+	    url: '/snips'
+	});
+    window.Snips = new SnipsList;
 
     window.GroupSnipsList = Backbone.Collection.extend({
 	    model: Snip,
