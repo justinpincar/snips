@@ -1,16 +1,34 @@
 $(function() {
-    window.Snip = Backbone.Model.extend({});
-    window.SnipsList = Backbone.Collection.extend({
-	    model: Snip,
-	    url: '/snips'
+    window.Today = function() {
+	return Date.today().toString('yyyy-MM-dd');
+    };
+
+    window.Group = Backbone.Model.extend({});
+    window.GroupsList = Backbone.Collection.extend({
+	    model: Group,
+	    url: '/groups'
 	});
-    window.Snips = new SnipsList;
+    window.Groups = new GroupsList;
+
+    window.Snip = Backbone.Model.extend({});
+
+    window.GroupSnipsList = Backbone.Collection.extend({
+	    model: Snip,
+	    url: '/snips/group'
+	});
+    window.GroupSnips = new GroupSnipsList;
 
     window.TeamSnipsList = Backbone.Collection.extend({
 	    model: Snip,
 	    url: '/snips/team'
 	});
     window.TeamSnips = new TeamSnipsList;
+
+    window.UserSnipsList = Backbone.Collection.extend({
+	    model: Snip,
+	    url: '/snips/user'
+	});
+    window.UserSnips = new UserSnipsList;
 
     window.User = Backbone.Model.extend({
 	    urlRoot: '/users'
@@ -22,24 +40,18 @@ $(function() {
     window.Users = new UsersList;
 
     window.SnipView = Backbone.View.extend({
-	    tagName: "li",
+	    tagName: "div",
 	    className: "snip",
 
 	    template: _.template(
-				 "<span><%= model.get('user') %></span>" +
-				 "<input type='text' class='snip-text' value='<%- model.get('content') %>' />" +
-				 "<button class='snip-save'>Save</button>" +
-				 "<span><%= model.get('team_id') %>: </span>" +
-				 "<span><%= model.get('day') %></span>"
+				 "<div class='snippet'>" +
+				 "<div class='nickname'><%= model.get('user').nickname %></div>" +
+				 "<div class='content'><%= model.get('content').replace(/\n/g, '<br />') %></div>" +
+				 "</div>"
 				 ),
 
-	    events: {
-		"click .snip-save": "save"
-	    },
-
 	    initialize: function() {
-		_.bindAll(this, "render", "save");
-		this.model.bind("change", this.render);
+		_.bindAll(this, "render");
 		this.model.view = this;
 	    },
 
@@ -47,15 +59,11 @@ $(function() {
 		$(this.el).html(this.template({model: this.model}));
 		return this;
 	    },
-
-	    save: function() {
-		this.model.save({content: this.$('.snip-text').val()});
-	    }
 	});
 
     window.MeView = Backbone.View.extend({
 	    template: _.template(
-				 "<h3>What did you do today?</h3>" +
+				 "<h4>What did you do today?</h4>" +
 				 "<% _.each(teams, function(team) { %>" +
 				 "<div><%= team.name %>:</div><textarea id='team-<%= team.id %>-snippet' class='snippet-content'></textarea>" +
 				 "<button class='save-snippet' data-team-id='<%= team.id %>'>Save</button>" +
@@ -66,15 +74,33 @@ $(function() {
 		"click .save-snippet": "saveSnippet"
 	    },
 
-	    initialize: function() {
-		_.bindAll(this, "saveSnippet", "render");
+	    initialize: function(day) {
+		this.day = day;
+		$('#day').html("Day: " + day);
+
+		_.bindAll(this, "loadSnippets", "saveSnippet", "render");
 		this.render();
 	    },
 
 	    render: function() {
+		$('#title').html("" + CurrentUser.get('nickname'));
 		$(this.el).html(this.template({teams: CurrentUser.get('teams')}));
 		$('#content').html(this.el);
+
+		UserSnips.bind("reset", this.loadSnippets);
+		UserSnips.fetch({data: {user_id: CurrentUser.id, day: this.day}}, {
+			success: function() {
+			    UserSnips.unbind("reset");
+			}
+		    });
+
 		return this;
+	    },
+
+	    loadSnippets: function(event) {
+		UserSnips.each(function(snip) {
+			$('#team-' + snip.get('team_id') + '-snippet').val(snip.get('content'));
+		    });
 	    },
 
 	    saveSnippet: function(event) {
@@ -127,10 +153,53 @@ $(function() {
 	    },
 	});
 
+    window.GroupView = Backbone.View.extend({
+	    initialize: function(groupId, day) {
+		this.groupId = groupId;
+		this.day = day;
+		$('#day').html("Day: " + day);
+
+		_.bindAll(this, "addOne", "addAll", "render");
+
+		$('#content').html('');
+		$(this.el).html('<div id="snips"><ul id="group-snips-list"></ul></div>');
+		this.render();
+	    },
+
+	    render: function() {
+		$('#title').html("Group: " + this.groupId);
+		$('#content').html(this.el);
+
+		GroupSnips.bind("reset", this.addAll);
+
+		GroupSnips.fetch({data: {group_id: this.groupId, day: this.day}}, {
+			success: function() {
+			    GroupSnips.unbind("reset");
+			}
+		    });
+
+		return this;
+	    },
+
+	    addOne: function(snip) {
+		var view = new SnipView({model: snip}).render().el;
+		this.$('#group-snips-list').append(view);
+	    },
+
+	    addAll: function() {
+		if (GroupSnips.length > 0) {
+		    GroupSnips.each(this.addOne);
+		} else {
+		    this.$('#group-snips-list').append($('<div>No Snips</div>'));
+		}
+	    },
+	});
+
     window.TeamView = Backbone.View.extend({
 	    initialize: function(teamId, day) {
 		this.teamId = teamId;
 		this.day = day;
+		$('#day').html("Day: " + day);
 
 		_.bindAll(this, "addOne", "addAll", "render");
 
@@ -140,6 +209,7 @@ $(function() {
 	    },
 
 	    render: function() {
+		$('#title').html("Team: " + this.teamId);
 		$('#content').html(this.el);
 
 		TeamSnips.bind("reset", this.addAll);
@@ -206,14 +276,16 @@ $(function() {
     window.AppView = Backbone.View.extend({
 	    el: '#snips-app',
 
-	    template: _.template('<div id="sign-out">Sign Out</div>' +
-				 '<div class="navigate" data-location="me"><%= user.get("nickname") %></div>' +
-				 '<div class="navigate" data-location="list">List</div>' +
-				 '<% _.each(user.get("teams"), function(team) { %><div class="navigate" data-location="team/<%= team.id %>"><%= team.name %></div><% }) %>' +
-				 '<div class="previous">Previous</div>' +
-				 '<div>Day: <%= date %></div>' +
-				 '<div class="next">Next</div>' +
-				 '<br /><br />' +
+	    template: _.template('<div id="header"><button id="sign-out">Sign Out</button>' +
+				 '<button id="nickname" class="navigate" data-location="me"><%= user.get("nickname") %></button>' +
+				 "<div class='nav-block'><h3>Groups</h3><div id='groups'></div></div>" +
+				 '<div class="nav-block"><h3>Teams</h3>' +
+				 '<% _.each(user.get("teams"), function(team) { %><button class="navigate" data-location="team/<%= team.id %>"><%= team.name %></button><% }) %></div>' +
+				 '<div id="title">Title here</div>' +
+				 '<div id="time-nav"><button class="previous">Previous</button>' +
+				 '<span id="day">Day: <%= date %></span>' +
+				 '<button class="next">Next</div></button>' +
+				 '</div>' +
 				 '<div id="content"></div>'),
 
 	    events: {
@@ -224,7 +296,7 @@ $(function() {
 	    },
 
 	    initialize: function() {
-		_.bindAll(this, "next", "previous", "replaceView", "signOut", "render");
+		_.bindAll(this, "loadGroups", "next", "previous", "replaceView", "signOut", "render");
 
 		this.currentView;
 		this.render();
@@ -245,12 +317,30 @@ $(function() {
 
 	    render: function() {
 		var date = Date.today().toString('yyyy-MM-dd');
-		//		console.log(CurrentUser.teams);
 		$(this.el).html(this.template({date: date, user: CurrentUser}));
+
+		Groups.bind("reset", this.loadGroups);
+		Groups.fetch();
+	    },
+
+	    loadGroups: function(event) {
+		Groups.each(function(group) {
+			$('#groups').append($('<button class="navigate" data-location="group/' + group.id + '">' + group.get('name') + '</button>'));
+		    });
 	    },
 
 	    navigate: function(event) {
+		fragment = Backbone.history.fragment;
+		match = fragment.match(/\d{4}-\d{2}-\d{2}/);
+		if (match) {
+		    currentDay = match[0]
+		} else {
+		    currentDay = Today();
+		}
+
 		var location = $(event.currentTarget).attr('data-location');
+		location = location + "/" + currentDay;
+
 		Backbone.history.navigate(location, {trigger: true});
 	    },
 
@@ -282,6 +372,7 @@ $(function() {
 		    location = fragment + "/" + day;
 		}
 
+		$('#day').html("Day: " + day);
 		Backbone.history.navigate(location, {trigger: true});
 	    },
 
@@ -305,6 +396,7 @@ $(function() {
 		    location = fragment + "/" + day;
 		}
 
+		$('#day').html("Day: " + day);
 		Backbone.history.navigate(location, {trigger: true});
 	    },
 
@@ -316,30 +408,51 @@ $(function() {
 
     window.Router = Backbone.Router.extend({
 	    routes: {
-		"list": "list",
+		"group/:id": "group",
+		"group/:id/:day": "group",
 		"team/:id": "team",
 		"team/:id/:day": "team",
 		"me": "me",
-		"*splat": "list"
+		"me/:day": "me",
+		"*splat": "splat"
 	    },
 
-	    list: function() {
-		SnipsAppView.replaceView(new SnipsView);
+	    splat: function() {
+		Backbone.history.navigate("group/1", {trigger: true});
+	    },
+
+	    group: function(groupId, day) {
+		if (typeof(day) == 'undefined') {
+		    Backbone.history.navigate("group/" + groupId + "/" + Today(), {trigger: true});
+		    return;
+		}
+
+		SnipsAppView.replaceView(new GroupView(groupId, day));
 	    },
 
 	    team: function(teamId, day) {
+		if (typeof(day) == 'undefined') {
+		    Backbone.history.navigate("team/" + teamId + "/" + Today(), {trigger: true});
+		    return;
+		}
+
 		SnipsAppView.replaceView(new TeamView(teamId, day));
 	    },
 
-	    me: function() {
-		SnipsAppView.replaceView(new MeView);
+	    me: function(day) {
+		if (typeof(day) == 'undefined') {
+		    Backbone.history.navigate("me/" + Today(), {trigger: true});
+		    return;
+		}
+
+		SnipsAppView.replaceView(new MeView(day));
 	    }
 	});
 
     new Router;
     var userId = $.cookie("userId");
     if (userId) {
-	window.CurrentUser = new User({id: 1});
+	window.CurrentUser = new User({id: userId});
 	CurrentUser.fetch({
 		success: function() {
 		    window.SnipsAppView = new AppView;
