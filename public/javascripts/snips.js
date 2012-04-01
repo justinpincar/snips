@@ -83,10 +83,11 @@ $(function() {
 				 '<div class="control-group">' +
 				 '<label class="control-label" for="textarea"><%= team.name %></label>' +
 				 '<div class="controls">' +
-				 '<textarea style="width: 100%" id="team-<%= team.id %>-snippet" rows="4" placeholder="What did you do on this day?"></textarea>' +
+				 '<textarea style="width: 100%" id="team-<%= team.id %>-snippet" rows="4" placeholder="What did you do on this day?" data-team-id="<%= team.id %>"></textarea>' +
 				 '</div>' +
 				 '</div>' + 
 				 "<button class='btn save-snippet pull-right' data-team-id='<%= team.id %>'>Save</button>" +
+				 '<span id="team-<%= team.id %>-label" class="label label-info pull-right" style="margin-right: 6px">Unchanged</span>' +
 				 '</div>' +
 				 '</div>' +
 				 '</fieldset>' +
@@ -98,13 +99,14 @@ $(function() {
 				 ),
 
 	    events: {
-		"click .save-snippet": "saveSnippet"
+		"click .save-snippet": "saveSnippet",
+		"keyup textarea": "setStatus"
 	    },
 
 	    initialize: function(day) {
 		this.day = day;
 
-		_.bindAll(this, "loadSnippets", "saveSnippet", "render");
+		_.bindAll(this, "loadSnippets", "saveSnippet", "setStatus", "render");
 		this.render();
 	    },
 
@@ -134,32 +136,45 @@ $(function() {
 		var teamId = $(event.currentTarget).attr('data-team-id');
 		var snipId = this.$('#team-' + teamId + '-snippet').attr('data-snip-id');
 		var content = this.$('#team-' + teamId + '-snippet').val();
+		var $label = this.$('#team-' + teamId + '-label');
+		$label.html("Saving...");
 
 		var snip;
 		if (typeof(snipId) === 'undefined') {
-		    snip = new Snip({
-			    user_id: CurrentUser.id,
-			    content: content,
-			    day: Today(),
-			    team_id: teamId
-			});
+		    attrs = {
+			user_id: CurrentUser.id,
+			content: content,
+			day: this.getCurrentDay(),
+			team_id: teamId
+		    };
+		    snip = new Snip(attrs);
 		} else {
 		    snip = UserSnips.get(snipId);
-		    snip.set({content: content});
+		    attrs = {content: content};
 		}
 
-		snip.save({
+		snip.save(attrs, {
 			success: function(model, response) {
-			    console.log("Success");
-			    console.log(model);
-			    console.log(response);
+			    $label.removeClass("label-info");
+			    $label.removeClass("label-important");
+			    $label.addClass("label-success");
+			    $label.html("Saved");
 			},
 			error: function(model, response) {
-			    console.log("Failure");
-			    console.log(model);
-			    console.log(response);
+			    $label.removeClass("label-info");
+			    $label.removeClass("label-success");
+			    $label.addClass("label-important");
+			    $label.html("Error");
 			},
 		    });
+	    },
+
+	    setStatus: function(event) {
+		var teamId = $(event.currentTarget).attr('data-team-id');
+		var $label = this.$('#team-' + teamId + '-label');
+		$label.removeClass("label-info label-success");
+		$label.addClass("label-warning");
+		$label.html("Unsaved");
 	    }
 	});
 
@@ -182,9 +197,7 @@ $(function() {
 			success: function() {
 			    Snips.unbind("reset");
 			}
-
 		    });
-
 
 		return this;
 	    },
@@ -419,6 +432,10 @@ $(function() {
 		this.currentView;
 		this.render();
 
+		key('e', function(event) {
+			event.preventDefault();
+			$('textarea').first().focus();
+		    });
 		key('i', function() {
 			Backbone.history.navigate("me", {trigger: true});
 		    });
@@ -434,7 +451,7 @@ $(function() {
 	    },
 
 	    render: function() {
-		var date = Date.today().toString('yyyy-MM-dd');
+		var date = Today();
 		$(this.el).html(this.template({date: date, user: CurrentUser}));
 
 		Groups.bind("reset", this.loadGroups);
@@ -457,16 +474,8 @@ $(function() {
 	    },
 
 	    navigate: function(event) {
-		fragment = Backbone.history.fragment;
-		match = fragment.match(/\d{4}-\d{2}-\d{2}/);
-		if (match) {
-		    currentDay = match[0]
-		} else {
-		    currentDay = Today();
-		}
-
 		var location = $(event.currentTarget).attr('data-location');
-		location = location + "/" + currentDay;
+		location = location + "/" + this.getCurrentDay();
 
 		Backbone.history.navigate(location, {trigger: true});
 	    },
@@ -585,6 +594,17 @@ $(function() {
 				 '<h3>' + title + '</h3>' +
 				 '</div>'
 				 );
+	    },
+	    getCurrentDay: function() {
+		fragment = Backbone.history.fragment;
+		match = fragment.match(/\d{4}-\d{2}-\d{2}/);
+		if (match) {
+		    currentDay = match[0];
+		} else {
+		    currentDay = Today();
+		}
+
+		return currentDay;
 	    }
 	});
 
