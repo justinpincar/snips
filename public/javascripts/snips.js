@@ -574,7 +574,7 @@ $(function() {
 
 	    signOut: function() {
 		$.cookie("userId", null);
-		location = '/';
+		new LoginView;
 	    },
 
 	    today: function() {
