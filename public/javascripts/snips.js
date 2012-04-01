@@ -10,6 +10,10 @@ $(function() {
 				 '<h3>' + title + '</h3>' +
 				 '</div>'
 				 );
+	    },
+
+	    humanizeDay: function(day) {
+		return Date.parse(day).toString('dddd, MMM d');
 	    }
 	});
 
@@ -138,7 +142,7 @@ $(function() {
 	    },
 
 	    render: function() {
-		this.setTitle(CurrentUser.get('nickname'), this.day);
+		this.setTitle(CurrentUser.get('nickname'), this.humanizeDay(this.day));
 		$(this.el).html(this.template({teams: CurrentUser.get('teams')}));
 		$('#content').html(this.el);
 
@@ -260,7 +264,7 @@ $(function() {
 
 	    render: function() {
 		this.$el.html(this.template());
-		this.setTitle("Group: " + this.groupId, this.day);
+		this.setTitle("Group: " + this.groupId, this.humanizeDay(this.day));
 
 		$('#content').html(this.el);
 
@@ -309,7 +313,7 @@ $(function() {
 				 ),
 
 	    render: function() {
-		this.setTitle("Team: " + this.teamId, this.day);
+		this.setTitle("Team: " + this.teamId, this.humanizeDay(this.day));
 		this.$el.html(this.template());
 		$('#content').html(this.el);
 
@@ -420,7 +424,7 @@ $(function() {
 				 '<div class="span8 offset2" style="padding-left: 19px">' +
 				 '<ul class="pager">' +
 				 '<li class="previous"><a>&larr; Older</a></li>' +
-				 '<li><button class="btn btn-info" data-toggle="modal" data-target="#info-modal">Info <i class="icon-info-sign icon-white"></i></button></li>' +
+				 '<li><button class="btn btn-info" data-toggle="modal" data-target="#info-modal"><i class="icon-info-sign icon-white"></i> Info</button></li>' +
 				 '<li class="next"><a>Newer &rarr;</a></li>' +
 				 '</ul>' +
 				 '</div>' +
@@ -437,6 +441,7 @@ $(function() {
 				 '<p><strong>e</strong> - Edit ( if available )</p>' +
 				 '<p><strong>j</strong> - Previous day</p>' +
 				 '<p><strong>k</strong> - Next day</p>' +
+				 '<p><strong>t</strong> - Today</p>' +
 				 '<p><strong>i</strong> - Your view</p>' +
 				 '<p><strong>l</strong> - List view</p>' +
 				 '</p>' +
@@ -477,6 +482,9 @@ $(function() {
 		    });
 		key('k', function() {
 			SnipsAppView.next();
+		    });
+		key('t', function() {
+			SnipsAppView.today();
 		    });
 	    },
 
@@ -567,6 +575,27 @@ $(function() {
 	    signOut: function() {
 		$.cookie("userId", null);
 		location = '/';
+	    },
+
+	    today: function() {
+		fragment = Backbone.history.fragment;
+		match = fragment.match(/\d{4}-\d{2}-\d{2}/);
+		if (match) {
+		    hasDate = true;
+		} else {
+		    hasDate = false;
+		}
+
+		day = Today();
+
+		var location = '';
+		if (hasDate) {
+		    location = fragment.replace(match[0], day);
+		} else {
+		    location = fragment + "/" + day;
+		}
+
+		Backbone.history.navigate(location, {trigger: true});
 	    }
 	});
 

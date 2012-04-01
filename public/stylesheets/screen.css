@@ -14,14 +14,14 @@ html {
   overflow-y: scroll;
 }
 
-body {
-  padding-top: 90px;
-}
-
 dt {
   text-transform: uppercase;
 }
 
 dd {
   margin-bottom: 10px;
+}
+
+#snips-app {
+  padding-top: 90px;
 }

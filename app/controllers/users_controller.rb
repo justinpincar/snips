@@ -1,6 +1,6 @@
 class UsersController < ApplicationController
   def index
-    users = User.all
+    users = User.order(:nickname).all
     render :json => users, :include => [:teams]
   end
 
