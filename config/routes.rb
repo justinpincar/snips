@@ -1,5 +1,5 @@
 Snips::Application.routes.draw do
-  resources :groups, :only => [:index]
+  resources :groups, :only => [:index, :show]
 
   resources :snips, :only => [:create, :index, :update] do
     collection do
@@ -9,6 +9,6 @@ Snips::Application.routes.draw do
     end
   end
 
-  resources :teams, :only => [:index]
+  resources :teams, :only => [:index, :show]
   resources :users, :only => [:index, :show]
 end

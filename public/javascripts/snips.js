@@ -1,22 +1,19 @@
 $(function() {
-    _.extend(Backbone.View.prototype, {
-	    setTitle: function(title, subtitle) {
-		if (typeof(subtitle) !== 'undefined') {
-		    title += ' <small>' + subtitle + '</small>';
-		}
-
-		$('#title').html(
-				 '<div class="page-header">' +
-				 '<h3>' + title + '</h3>' +
-				 '</div>'
-				 );
-	    },
-
-	    humanizeDay: function(day) {
-		return Date.parse(day).toString('dddd, MMM d');
-	    }
-	});
-
+    window.setTitle = function(title, subtitle) {
+	if (typeof(subtitle) !== 'undefined') {
+	    title += ' <small>' + subtitle + '</small>';
+	}
+	
+	$('#title').html(
+			 '<div class="page-header">' +
+			 '<h3 id="inner-title">' + title + '</h3>' +
+			 '</div>'
+			 );
+    };
+    
+    window.humanizeDay = function(day) {
+	return Date.parse(day).toString('dddd, MMM d');
+    };
 
     window.Today = function() {
 	return Date.today().toString('yyyy-MM-dd');
@@ -34,14 +31,18 @@ $(function() {
 	return currentDay;
     }
 
-    window.Group = Backbone.Model.extend({});
+    window.Group = Backbone.Model.extend({
+	    urlRoot: '/groups'
+	});
     window.GroupsList = Backbone.Collection.extend({
 	    model: Group,
 	    url: '/groups'
 	});
     window.Groups = new GroupsList;
 
-    window.Team = Backbone.Model.extend({});
+    window.Team = Backbone.Model.extend({
+	    urlRoot: '/teams'
+	});
     window.TeamsList = Backbone.Collection.extend({
 	    model: Team,
 	    url: '/teams'
@@ -142,7 +143,7 @@ $(function() {
 	    },
 
 	    render: function() {
-		this.setTitle(CurrentUser.get('nickname'), this.humanizeDay(this.day));
+		setTitle(CurrentUser.get('nickname'), humanizeDay(this.day));
 		$(this.el).html(this.template({teams: CurrentUser.get('teams')}));
 		$('#content').html(this.el);
 
@@ -264,12 +265,16 @@ $(function() {
 
 	    render: function() {
 		this.$el.html(this.template());
-		this.setTitle("Group: " + this.groupId, this.humanizeDay(this.day));
-
 		$('#content').html(this.el);
 
-		GroupSnips.bind("reset", this.addAll);
+		// Total hack
+		var group = new Group({id: this.groupId, day: this.day});
+		group.fetch({
+			success: function(model, response) {
+			    setTitle(model.get("name"), humanizeDay(model.get('day')));
+			}});
 
+		GroupSnips.bind("reset", this.addAll);
 		GroupSnips.fetch({data: {group_id: this.groupId, day: this.day}}, {
 			success: function() {
 			    GroupSnips.unbind("reset");
@@ -313,9 +318,15 @@ $(function() {
 				 ),
 
 	    render: function() {
-		this.setTitle("Team: " + this.teamId, this.humanizeDay(this.day));
 		this.$el.html(this.template());
 		$('#content').html(this.el);
+
+		// Total hack
+		var team = new Team({id: this.teamId, day: this.day});
+		team.fetch({
+			success: function(model, response) {
+			    setTitle(model.get("name"), humanizeDay(model.get('day')));
+			}});
 
 		TeamSnips.bind("reset", this.addAll);
 		TeamSnips.fetch({data: {team_id: this.teamId, day: this.day}}, {
