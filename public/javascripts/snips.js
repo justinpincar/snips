@@ -10,7 +10,9 @@ $(function() {
 	});
     window.Groups = new GroupsList;
 
-    window.Snip = Backbone.Model.extend({});
+    window.Snip = Backbone.Model.extend({
+	    urlRoot: '/snips'
+	});
     window.SnipsList = Backbone.Collection.extend({
 	    model: Snip,
 	    url: '/snips'
@@ -117,20 +119,40 @@ $(function() {
 	    loadSnippets: function(event) {
 		UserSnips.each(function(snip) {
 			$('#team-' + snip.get('team_id') + '-snippet').val(snip.get('content'));
+			$('#team-' + snip.get('team_id') + '-snippet').attr('data-snip-id', snip.id);
 		    });
 	    },
 
 	    saveSnippet: function(event) {
 		var teamId = $(event.currentTarget).attr('data-team-id');
-		Snips.create({
-			snip: {
-			    user_id: CurrentUser.id,
-				content: this.$('#team-' + teamId + '-snippet').val(),
-				day: Date.today().toString('yyyy-MM-dd'),
-				team_id: teamId
-				}
-			    });
+		var snipId = this.$('#team-' + teamId + '-snippet').attr('data-snip-id');
+		var content = this.$('#team-' + teamId + '-snippet').val();
 
+		var snip;
+		if (typeof(snipId) === 'undefined') {
+		    snip = new Snip({
+			    user_id: CurrentUser.id,
+			    content: content,
+			    day: Today(),
+			    team_id: teamId
+			});
+		} else {
+		    snip = UserSnips.get(snipId);
+		    snip.set({content: content});
+		}
+
+		snip.save({
+			success: function(model, response) {
+			    console.log("Success");
+			    console.log(model);
+			    console.log(response);
+			},
+			error: function(model, response) {
+			    console.log("Failure");
+			    console.log(model);
+			    console.log(response);
+			},
+		    });
 	    }
 	});
 

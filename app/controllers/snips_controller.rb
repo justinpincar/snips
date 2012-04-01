@@ -5,7 +5,13 @@ class SnipsController < ApplicationController
   end
 
   def create
-    snip = Snip.create!(params[:snip])
+    snip = Snip.create!(params)
+    render :json => snip, :include => [:user]
+  end
+
+  def update
+    snip = Snip.find(params[:id])
+    snip.update_attributes(params)
     render :json => snip, :include => [:user]
   end
 
