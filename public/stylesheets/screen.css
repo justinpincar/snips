@@ -12,106 +12,16 @@ $white: #FFFFFF;
 
 html {
   overflow-y: scroll;
-  height: 100%;
-  margin: 0;
-  padding: 0;
 }
-
-h1, h2, h3, h4, h5, h6, h7 {
-  margin: 0;
-  padding: 0;
-}
-
 
 body {
-  background: #FCFCFC;
-  font-size: 16px;
+  padding-top: 90px;
 }
 
-button {
-  display: inline-block;
-  border: 1px solid black;
-  color: #333;
-  background-color: #FAF6F9;
-  padding: 3px 6px;
-  margin: 3px;
-}
-
-button:hover {
-  background-color: #CED7DE;
-}
-
-#snips-app {
-  width: 960px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-#header {
-  width: 100%;
-}
-
-#sign-out {
-  float: right;
-}
-
-#nickname {
-  float: right;
-}
-
-.nav-block {
-  display: inline-block;
-  width: 200px;
-  border: 1px solid black;
-  float: left;
-}
-
-#title {
-  margin-top: 20px;
-  clear: both;
-  float: left;
-  border: 1px solid black;
-  height: 28px;
-  line-height: 28px;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-#time-nav {
-  margin-top: 20px;
-  float: right;
-  border: 1px solid black;
-  height: 28px;
-  line-height: 28px;
-}
-
-#time-nav #day {
-  padding: 20px;
-}
-
-#content {
-  clear: both;
-  padding: 20px;
-  border: 1px solid blue;
-}
-
-.snippet {
-  padding: 8px;
-}
-
-.snippet .nickname {
+dt {
   text-transform: uppercase;
-  display: inline-block;
-  width: 120px;
-  text-align: right;
-  padding-right: 8px;
-  font-size: 18px;
-  vertical-align: top;
 }
 
-.snippet .content {
-  display: inline-block;
-  border-left: 1px solid #888;
-  padding-left: 8px;
-  font-size: 18px;
+dd {
+  margin-bottom: 10px;
 }

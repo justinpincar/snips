@@ -45,14 +45,9 @@ $(function() {
     window.Users = new UsersList;
 
     window.SnipView = Backbone.View.extend({
-	    tagName: "div",
-	    className: "snip",
-
 	    template: _.template(
-				 "<div class='snippet'>" +
-				 "<div class='nickname'><%= model.get('user').nickname %></div>" +
-				 "<div class='content'><%= model.get('content').replace(/\n/g, '<br />') %></div>" +
-				 "</div>"
+				 "<dt><%= model.get('user').nickname %></dt>" +
+				 "<dd><%= model.get('content').replace(/\n/g, '<br />') %></dd>"
 				 ),
 
 	    initialize: function() {
@@ -68,11 +63,29 @@ $(function() {
 
     window.MeView = Backbone.View.extend({
 	    template: _.template(
-				 "<h4>What did you do today?</h4>" +
+				 '<div class="row">' +
+				 '<div class="span8 offset2 well">' +
+
 				 "<% _.each(teams, function(team) { %>" +
-				 "<div><%= team.name %>:</div><textarea id='team-<%= team.id %>-snippet' class='snippet-content'></textarea>" +
-				 "<button class='save-snippet' data-team-id='<%= team.id %>'>Save</button>" +
-				 "<% }) %>"
+				 '<form class="form-horizontal">' +
+				 '<fieldset>' +
+				 '<div class="row">' +
+				 '<div class="span8">' +
+				 '<div class="control-group">' +
+				 '<label class="control-label" for="textarea"><%= team.name %></label>' +
+				 '<div class="controls">' +
+				 '<textarea style="width: 100%" id="team-<%= team.id %>-snippet" rows="4"></textarea>' +
+				 '</div>' +
+				 '</div>' + 
+				 "<button class='btn save-snippet pull-right' data-team-id='<%= team.id %>'>Save</button>" +
+				 '</div>' +
+				 '</div>' +
+				 '</fieldset>' +
+				 '</form>' +
+				 "<% }) %>" +
+
+				 '</div>' +
+				 '</div>'
 				 ),
 
 	    events: {
@@ -81,14 +94,13 @@ $(function() {
 
 	    initialize: function(day) {
 		this.day = day;
-		$('#day').html("Day: " + day);
 
 		_.bindAll(this, "loadSnippets", "saveSnippet", "render");
 		this.render();
 	    },
 
 	    render: function() {
-		$('#title').html("" + CurrentUser.get('nickname'));
+		this.setTitle(CurrentUser.get('nickname'), this.day);
 		$(this.el).html(this.template({teams: CurrentUser.get('teams')}));
 		$('#content').html(this.el);
 
@@ -127,7 +139,7 @@ $(function() {
 		_.bindAll(this, "addOne", "addAll", "render");
 
 		$('#content').html('');
-		$(this.el).html('<div id="snips"><ul id="snips-list"></ul></div>');
+		$(this.el).html('<div><ul id="snips-list"></ul></div>');
 		this.render();
 	    },
 
@@ -162,17 +174,25 @@ $(function() {
 	    initialize: function(groupId, day) {
 		this.groupId = groupId;
 		this.day = day;
-		$('#day').html("Day: " + day);
 
 		_.bindAll(this, "addOne", "addAll", "render");
 
 		$('#content').html('');
-		$(this.el).html('<div id="snips"><ul id="group-snips-list"></ul></div>');
 		this.render();
 	    },
 
+	    template: _.template(
+				 '<div class="row">' +
+				 '<div class="span8 offset2 well">' +
+				 '<div><ul id="group-snips-list"></ul></div>' +
+				 '</div>' +
+				 '</div>'
+				  ),
+
 	    render: function() {
-		$('#title').html("Group: " + this.groupId);
+		this.$el.html(this.template());
+		this.setTitle("Group: " + this.groupId, this.day);
+
 		$('#content').html(this.el);
 
 		GroupSnips.bind("reset", this.addAll);
@@ -204,21 +224,27 @@ $(function() {
 	    initialize: function(teamId, day) {
 		this.teamId = teamId;
 		this.day = day;
-		$('#day').html("Day: " + day);
 
 		_.bindAll(this, "addOne", "addAll", "render");
 
 		$('#content').html('');
-		$(this.el).html('<div id="snips"><ul id="team-snips-list"></ul></div>');
 		this.render();
 	    },
 
+	    template: _.template(
+				 '<div class="row">' +
+				 '<div class="span8 offset2 well">' +
+				 '<div><ul id="team-snips-list"></ul></div>' +
+				 '</div>' +
+				 '</div>'
+				 ),
+
 	    render: function() {
-		$('#title').html("Team: " + this.teamId);
+		this.setTitle("Team: " + this.teamId, this.day);
+		this.$el.html(this.template());
 		$('#content').html(this.el);
 
 		TeamSnips.bind("reset", this.addAll);
-
 		TeamSnips.fetch({data: {team_id: this.teamId, day: this.day}}, {
 			success: function() {
 			    TeamSnips.unbind("reset");
@@ -247,8 +273,19 @@ $(function() {
 	    el: '#snips-app',
 
 	    template: _.template(
-				 "<h3>Sign In</h3>" +
-				 "<% _.each(users, function(user) { %><div class='user' data-user-id='<%= user.id %>'><%= user.get('nickname') %></div><% }) %>"
+				 '<div class="span6 offset3 well">' +
+				 '<h2>Welcome to Snips!</h2>' +
+				 '<br />' +
+				 '<div class="btn-group">' +
+				 '<a class="btn btn-large dropdown-toggle" data-toggle="dropdown" href="#"><i class="icon-user"></i> Sign In <span class="caret"></span></a>' +
+				 '<ul class="dropdown-menu">' +
+				 
+				 "<% _.each(users, function(user) { %><li><a href='#' class='user' data-user-id='<%= user.id %>'><%= user.get('nickname') %></a></li><% }) %>" +
+
+				 '</ul>' +
+				 '</div>' +
+				 '</div>'
+
 				 ),
 
 	    events: {
@@ -281,17 +318,67 @@ $(function() {
     window.AppView = Backbone.View.extend({
 	    el: '#snips-app',
 
-	    template: _.template('<div id="header"><button id="sign-out">Sign Out</button>' +
-				 '<button id="nickname" class="navigate" data-location="me"><%= user.get("nickname") %></button>' +
-				 "<div class='nav-block'><h3>Groups</h3><div id='groups'></div></div>" +
-				 '<div class="nav-block"><h3>Teams</h3>' +
-				 '<% _.each(user.get("teams"), function(team) { %><button class="navigate" data-location="team/<%= team.id %>"><%= team.name %></button><% }) %></div>' +
-				 '<div id="title">Title here</div>' +
-				 '<div id="time-nav"><button class="previous">Previous</button>' +
-				 '<span id="day">Day: <%= date %></span>' +
-				 '<button class="next">Next</div></button>' +
+	    template: _.template('<div id="header">' +
+				 '<ul class="nav nav-pills pull-right">' +
+				 '<li><a id="nickname" class="navigate" data-location="me"><%= user.get("nickname") %></a> ' +
+				 '<li><a id="sign-out" href="#">Sign Out</a>' +
+				 '</ul>' +
+
+				 '<div class="row">' +
+
+				 '<div class="span3">' +
+				 '<h3>Groups</h3> <ul id="groups" class="nav nav-pills"></ul>' +
 				 '</div>' +
-				 '<div id="content"></div>'),
+
+				 '<div class="span3">' +
+				 '<h3>Teams</h3>' +
+				 '<ul id="teams" class="nav nav-pills">' +
+				 '<% _.each(user.get("teams"), function(team) { %><li><a href="#team/<%= team.id %>"><%= team.name %></button><% }) %></a></li>' +
+				 '</ul>' +
+				 '</div>' +
+
+				 '</div>' +
+
+
+				 '<div class="row">' +
+				 '<div class="span8 offset2" style="padding-left: 19px">' +
+				 '<div id="title"></div>' +
+				 '</div>' +
+				 '</div>' +
+
+				 '</div>' +
+				 '<div id="content"></div>' +
+
+
+				 '<div class="row">' +
+				 '<div class="span8 offset2" style="padding-left: 19px">' +
+				 '<ul class="pager">' +
+				 '<li class="previous"><a>&larr; Older</a></li>' +
+				 '<li><button class="btn btn-info" data-toggle="modal" data-target="#info-modal">Info <i class="icon-info-sign icon-white"></i></button></li>' +
+				 '<li class="next"><a>Newer &rarr;</a></li>' +
+				 '</ul>' +
+				 '</div>' +
+				 '</div>' +
+
+				 '<div id="info-modal" class="modal fade">' +
+				 '<div class="modal-header">' +
+				 '<a class="close" data-dismiss="modal">x</a>' +
+				 '<h3>Tips and Tricks</h3>' +
+				 '</div>' +
+				 '<div class="modal-body">' +
+				 '<h4>Use Keyboard Shortcuts</h4>' +
+				 '<p>' +
+				 '<p><strong>j</strong> - Previous day</p>' +
+				 '<p><strong>k</strong> - Next day</p>' +
+				 '<p><strong>i</strong> - Your view</p>' +
+				 '<p><strong>l</strong> - List view</p>' +
+				 '</p>' +
+				 '</div>' +
+				 '<div class="modal-footer">' +
+				 '<button href="#" class="btn" data-dismiss="modal">Close</button>' +
+				 '</div>' +
+				 '</div>'
+				 ),
 
 	    events: {
 		"click #sign-out": "signOut",
@@ -330,7 +417,7 @@ $(function() {
 
 	    loadGroups: function(event) {
 		Groups.each(function(group) {
-			$('#groups').append($('<button class="navigate" data-location="group/' + group.id + '">' + group.get('name') + '</button>'));
+			$('#groups').append($('<li><a href="#group/' + group.id + '">' + group.get('name') + '</a></li>'));
 		    });
 	    },
 
@@ -377,7 +464,6 @@ $(function() {
 		    location = fragment + "/" + day;
 		}
 
-		$('#day').html("Day: " + day);
 		Backbone.history.navigate(location, {trigger: true});
 	    },
 
@@ -401,7 +487,6 @@ $(function() {
 		    location = fragment + "/" + day;
 		}
 
-		$('#day').html("Day: " + day);
 		Backbone.history.navigate(location, {trigger: true});
 	    },
 
@@ -451,6 +536,20 @@ $(function() {
 		}
 
 		SnipsAppView.replaceView(new MeView(day));
+	    }
+	});
+
+    _.extend(Backbone.View.prototype, {
+	    setTitle: function(title, subtitle) {
+		if (typeof(subtitle) !== 'undefined') {
+		    title += ' <small>' + subtitle + '</small>';
+		}
+
+		$('#title').html(
+				 '<div class="page-header">' +
+				 '<h3>' + title + '</h3>' +
+				 '</div>'
+				 );
 	    }
 	});
 
