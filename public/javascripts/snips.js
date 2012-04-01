@@ -1,7 +1,34 @@
 $(function() {
+    _.extend(Backbone.View.prototype, {
+	    setTitle: function(title, subtitle) {
+		if (typeof(subtitle) !== 'undefined') {
+		    title += ' <small>' + subtitle + '</small>';
+		}
+
+		$('#title').html(
+				 '<div class="page-header">' +
+				 '<h3>' + title + '</h3>' +
+				 '</div>'
+				 );
+	    }
+	});
+
+
     window.Today = function() {
 	return Date.today().toString('yyyy-MM-dd');
     };
+
+    window.getCurrentDay = function() {
+	fragment = Backbone.history.fragment;
+	match = fragment.match(/\d{4}-\d{2}-\d{2}/);
+	if (match) {
+	    currentDay = match[0];
+	} else {
+	    currentDay = Today();
+	}
+
+	return currentDay;
+    }
 
     window.Group = Backbone.Model.extend({});
     window.GroupsList = Backbone.Collection.extend({
@@ -144,7 +171,7 @@ $(function() {
 		    attrs = {
 			user_id: CurrentUser.id,
 			content: content,
-			day: this.getCurrentDay(),
+			day: getCurrentDay(),
 			team_id: teamId
 		    };
 		    snip = new Snip(attrs);
@@ -407,6 +434,7 @@ $(function() {
 				 '<div class="modal-body">' +
 				 '<h4>Use Keyboard Shortcuts</h4>' +
 				 '<p>' +
+				 '<p><strong>e</strong> - Edit ( if available )</p>' +
 				 '<p><strong>j</strong> - Previous day</p>' +
 				 '<p><strong>k</strong> - Next day</p>' +
 				 '<p><strong>i</strong> - Your view</p>' +
@@ -437,10 +465,12 @@ $(function() {
 			$('textarea').first().focus();
 		    });
 		key('i', function() {
-			Backbone.history.navigate("me", {trigger: true});
+			fragment = "me/" + getCurrentDay();
+			Backbone.history.navigate(fragment, {trigger: true});
 		    });
 		key('l', function() {
-			Backbone.history.navigate("list", {trigger: true});
+			fragment = "group/1/" + getCurrentDay();
+			Backbone.history.navigate(fragment, {trigger: true});
 		    });
 		key('j', function() {
 			SnipsAppView.previous();
@@ -475,7 +505,7 @@ $(function() {
 
 	    navigate: function(event) {
 		var location = $(event.currentTarget).attr('data-location');
-		location = location + "/" + this.getCurrentDay();
+		location = location + "/" + getCurrentDay();
 
 		Backbone.history.navigate(location, {trigger: true});
 	    },
@@ -580,31 +610,6 @@ $(function() {
 		}
 
 		SnipsAppView.replaceView(new MeView(day));
-	    }
-	});
-
-    _.extend(Backbone.View.prototype, {
-	    setTitle: function(title, subtitle) {
-		if (typeof(subtitle) !== 'undefined') {
-		    title += ' <small>' + subtitle + '</small>';
-		}
-
-		$('#title').html(
-				 '<div class="page-header">' +
-				 '<h3>' + title + '</h3>' +
-				 '</div>'
-				 );
-	    },
-	    getCurrentDay: function() {
-		fragment = Backbone.history.fragment;
-		match = fragment.match(/\d{4}-\d{2}-\d{2}/);
-		if (match) {
-		    currentDay = match[0];
-		} else {
-		    currentDay = Today();
-		}
-
-		return currentDay;
 	    }
 	});
 
