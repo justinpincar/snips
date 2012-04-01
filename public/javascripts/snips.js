@@ -444,6 +444,7 @@ $(function() {
 				 '<p><strong>t</strong> - Today</p>' +
 				 '<p><strong>i</strong> - Your view</p>' +
 				 '<p><strong>l</strong> - List view</p>' +
+				 '<p><strong>esc</strong> - Blur ( take focus away from current element )</p>' +
 				 '</p>' +
 				 '</div>' +
 				 '<div class="modal-footer">' +
