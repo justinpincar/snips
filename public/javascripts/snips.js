@@ -10,6 +10,13 @@ $(function() {
 	});
     window.Groups = new GroupsList;
 
+    window.Team = Backbone.Model.extend({});
+    window.TeamsList = Backbone.Collection.extend({
+	    model: Team,
+	    url: '/teams'
+	});
+    window.Teams = new TeamsList;
+
     window.Snip = Backbone.Model.extend({
 	    urlRoot: '/snips'
 	});
@@ -76,7 +83,7 @@ $(function() {
 				 '<div class="control-group">' +
 				 '<label class="control-label" for="textarea"><%= team.name %></label>' +
 				 '<div class="controls">' +
-				 '<textarea style="width: 100%" id="team-<%= team.id %>-snippet" rows="4"></textarea>' +
+				 '<textarea style="width: 100%" id="team-<%= team.id %>-snippet" rows="4" placeholder="What did you do on this day?"></textarea>' +
 				 '</div>' +
 				 '</div>' + 
 				 "<button class='btn save-snippet pull-right' data-team-id='<%= team.id %>'>Save</button>" +
@@ -353,10 +360,7 @@ $(function() {
 				 '</div>' +
 
 				 '<div class="span3">' +
-				 '<h3>Teams</h3>' +
-				 '<ul id="teams" class="nav nav-pills">' +
-				 '<% _.each(user.get("teams"), function(team) { %><li><a href="#team/<%= team.id %>"><%= team.name %></button><% }) %></a></li>' +
-				 '</ul>' +
+				 '<h3>Teams</h3> <ul id="teams" class="nav nav-pills"></ul>' +
 				 '</div>' +
 
 				 '</div>' +
@@ -410,7 +414,7 @@ $(function() {
 	    },
 
 	    initialize: function() {
-		_.bindAll(this, "loadGroups", "next", "previous", "replaceView", "signOut", "render");
+		_.bindAll(this, "loadGroups", "loadTeams", "next", "previous", "replaceView", "signOut", "render");
 
 		this.currentView;
 		this.render();
@@ -435,11 +439,20 @@ $(function() {
 
 		Groups.bind("reset", this.loadGroups);
 		Groups.fetch();
+
+		Teams.bind("reset", this.loadTeams);
+		Teams.fetch();
 	    },
 
 	    loadGroups: function(event) {
 		Groups.each(function(group) {
 			$('#groups').append($('<li><a href="#group/' + group.id + '">' + group.get('name') + '</a></li>'));
+		    });
+	    },
+
+	    loadTeams: function(event) {
+		Teams.each(function(team) {
+			$('#teams').append($('<li><a href="#team/' + team.id + '">' + team.get('name') + '</a></li>'));
 		    });
 	    },
 

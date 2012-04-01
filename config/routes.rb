@@ -9,5 +9,6 @@ Snips::Application.routes.draw do
     end
   end
 
+  resources :teams, :only => [:index]
   resources :users, :only => [:index, :show]
 end
