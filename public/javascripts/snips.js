@@ -284,10 +284,14 @@ $(function() {
 	    },
 
 	    addAll: function() {
-		if (GroupSnips.length > 0) {
-		    GroupSnips.each(this.addOne);
-		} else {
-		    this.$('#group-snips-list').append($('<div>No Snips</div>'));
+		// Hack to only add once until I figure out why two GroupViews get initialized.
+		if ($('#group-snips-list > div').size() == 0) {
+		    if (GroupSnips.length > 0) {
+			GroupSnips.each(this.addOne);
+		    }
+		    else {
+			this.$('#group-snips-list').append($('<div>No Snips</div>'));
+		    }
 		}
 	    },
 
@@ -472,7 +476,6 @@ $(function() {
 	    initialize: function() {
 		_.bindAll(this, "loadGroups", "loadTeams", "next", "previous", "replaceView", "signOut", "render", "onClose");
 
-		this.currentView;
 		this.render();
 
 		key('e', function(event) {
@@ -633,7 +636,7 @@ $(function() {
 	    },
 
 	    splat: function() {
-		Backbone.history.navigate("group/1", {trigger: true});
+		Backbone.history.navigate("group/1/" + Today(), {trigger: true});
 	    },
 
 	    group: function(groupId, day) {
