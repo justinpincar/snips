@@ -85,6 +85,14 @@ $(function() {
 	});
     window.Users = new UsersList;
 
+    Backbone.View.prototype.close = function(){
+	this.remove();
+	this.unbind();
+	if (this.onClose){
+	    this.onClose();
+	}
+    }
+
     window.SnipView = Backbone.View.extend({
 	    template: _.template(
 				 "<dt><%= model.get('user').nickname %></dt>" +
@@ -138,21 +146,15 @@ $(function() {
 	    initialize: function(day) {
 		this.day = day;
 
-		_.bindAll(this, "loadSnippets", "saveSnippet", "setStatus", "render");
-		this.render();
+		_.bindAll(this, "loadSnippets", "saveSnippet", "setStatus", "render", "onClose");
 	    },
 
 	    render: function() {
 		setTitle(CurrentUser.get('nickname'), humanizeDay(this.day));
 		$(this.el).html(this.template({teams: CurrentUser.get('teams')}));
-		$('#content').html(this.el);
 
-		UserSnips.bind("reset", this.loadSnippets);
-		UserSnips.fetch({data: {user_id: CurrentUser.id, day: this.day}}, {
-			success: function() {
-			    UserSnips.unbind("reset");
-			}
-		    });
+		UserSnips.on("reset", this.loadSnippets);
+		UserSnips.fetch({data: {user_id: CurrentUser.id, day: this.day}});
 
 		return this;
 	    },
@@ -207,29 +209,25 @@ $(function() {
 		$label.removeClass("label-info label-success");
 		$label.addClass("label-warning");
 		$label.html("Unsaved");
+	    },
+
+	    onClose: function() {
+		UserSnips.off("reset", this.loadSnippets);
 	    }
 	});
 
     window.SnipsView = Backbone.View.extend({
 	    initialize: function() {
-		_.bindAll(this, "addOne", "addAll", "render");
+		_.bindAll(this, "addOne", "addAll", "render", "onClose");
 
-		$('#content').html('');
 		$(this.el).html('<div><ul id="snips-list"></ul></div>');
-		this.render();
 	    },
 
 	    render: function() {
 		//alert("SnipsView#render");
-		$('#content').html(this.el);
 
-		Snips.bind("reset", this.addAll);
-
-		Snips.fetch({
-			success: function() {
-			    Snips.unbind("reset");
-			}
-		    });
+		Snips.on("reset", this.addAll);
+		Snips.fetch();
 
 		return this;
 	    },
@@ -242,6 +240,10 @@ $(function() {
 	    addAll: function() {
 		Snips.each(this.addOne);
 	    },
+
+	    onClose: function() {
+		Snips.off("reset", this.addAll);
+	    }
 	});
 
     window.GroupView = Backbone.View.extend({
@@ -249,10 +251,7 @@ $(function() {
 		this.groupId = groupId;
 		this.day = day;
 
-		_.bindAll(this, "addOne", "addAll", "render");
-
-		$('#content').html('');
-		this.render();
+		_.bindAll(this, "addOne", "addAll", "render", "onClose");
 	    },
 
 	    template: _.template(
@@ -265,7 +264,6 @@ $(function() {
 
 	    render: function() {
 		this.$el.html(this.template());
-		$('#content').html(this.el);
 
 		// Total hack
 		var group = new Group({id: this.groupId, day: this.day});
@@ -274,12 +272,8 @@ $(function() {
 			    setTitle(model.get("name"), humanizeDay(model.get('day')));
 			}});
 
-		GroupSnips.bind("reset", this.addAll);
-		GroupSnips.fetch({data: {group_id: this.groupId, day: this.day}}, {
-			success: function() {
-			    GroupSnips.unbind("reset");
-			}
-		    });
+		GroupSnips.on("reset", this.addAll);
+		GroupSnips.fetch({data: {group_id: this.groupId, day: this.day}});
 
 		return this;
 	    },
@@ -296,6 +290,10 @@ $(function() {
 		    this.$('#group-snips-list').append($('<div>No Snips</div>'));
 		}
 	    },
+
+	    onClose: function() {
+		GroupSnips.off("reset", this.addAll);
+	    }
 	});
 
     window.TeamView = Backbone.View.extend({
@@ -303,10 +301,7 @@ $(function() {
 		this.teamId = teamId;
 		this.day = day;
 
-		_.bindAll(this, "addOne", "addAll", "render");
-
-		$('#content').html('');
-		this.render();
+		_.bindAll(this, "addOne", "addAll", "render", "onClose");
 	    },
 
 	    template: _.template(
@@ -319,7 +314,6 @@ $(function() {
 
 	    render: function() {
 		this.$el.html(this.template());
-		$('#content').html(this.el);
 
 		// Total hack
 		var team = new Team({id: this.teamId, day: this.day});
@@ -328,12 +322,8 @@ $(function() {
 			    setTitle(model.get("name"), humanizeDay(model.get('day')));
 			}});
 
-		TeamSnips.bind("reset", this.addAll);
-		TeamSnips.fetch({data: {team_id: this.teamId, day: this.day}}, {
-			success: function() {
-			    TeamSnips.unbind("reset");
-			}
-		    });
+		TeamSnips.on("reset", this.addAll);
+		TeamSnips.fetch({data: {team_id: this.teamId, day: this.day}});
 
 		return this;
 	    },
@@ -350,6 +340,10 @@ $(function() {
 		    this.$('#team-snips-list').append($('<div>No Snips</div>'));
 		}
 	    },
+
+	    onClose: function() {
+		TeamSnips.off("reset", this.addAll);
+	    }
 	});
 
 
@@ -377,11 +371,11 @@ $(function() {
 	    },
 
 	    initialize: function() {
-		_.bindAll(this, "signIn", "render");
+		_.bindAll(this, "signIn", "render", "onClose");
 
-		Users.bind("reset", this.render);
-
+		Users.on("reset", this.render);
 		Users.fetch();
+
 		this.render();
 	    },
 
@@ -396,6 +390,10 @@ $(function() {
 		$.cookie("userId", CurrentUser.id, {expires: 7});
 		window.SnipsAppView = new AppView;
 		Backbone.history.start();
+	    },
+
+	    onClose: function() {
+		Users.off("reset", this.render);
 	    }
 	});
 
@@ -472,7 +470,7 @@ $(function() {
 	    },
 
 	    initialize: function() {
-		_.bindAll(this, "loadGroups", "loadTeams", "next", "previous", "replaceView", "signOut", "render");
+		_.bindAll(this, "loadGroups", "loadTeams", "next", "previous", "replaceView", "signOut", "render", "onClose");
 
 		this.currentView;
 		this.render();
@@ -504,10 +502,10 @@ $(function() {
 		var date = Today();
 		$(this.el).html(this.template({date: date, user: CurrentUser}));
 
-		Groups.bind("reset", this.loadGroups);
+		Groups.on("reset", this.loadGroups);
 		Groups.fetch();
 
-		Teams.bind("reset", this.loadTeams);
+		Teams.on("reset", this.loadTeams);
 		Teams.fetch();
 	    },
 
@@ -531,11 +529,14 @@ $(function() {
 	    },
 
 	    replaceView: function(newView) {
-		if (!this.currentView) {
-		    return;
+		if (this.currentView) {
+		    this.currentView.close();
 		}
-		this.currentView.remove();
+
 		this.currentView = newView;
+		this.currentView.render();
+
+		$('#content').html(this.currentView.el);
 	    },
 
 	    previous: function() {
@@ -586,6 +587,10 @@ $(function() {
 
 	    signOut: function() {
 		$.cookie("userId", null);
+		this.$el.html('');
+		this.unbind();
+		Groups.off("reset", this.loadGroups);
+		Teams.off("reset", this.loadTeams);
 		new LoginView;
 	    },
 
@@ -608,6 +613,11 @@ $(function() {
 		}
 
 		Backbone.history.navigate(location, {trigger: true});
+	    },
+
+	    onClose: function() {
+		Groups.off("reset", this.loadGroups);
+		Teams.off("reset", this.loadTeams);
 	    }
 	});
 
