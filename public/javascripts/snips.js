@@ -116,7 +116,7 @@ $(function() {
 				 '<div class="span8 offset2 well">' +
 
 				 "<% _.each(teams, function(team) { %>" +
-				 '<form class="form-horizontal">' +
+				 '<form class="form-horizontal" onsubmit="return false;">' +
 				 '<fieldset>' +
 				 '<div class="row">' +
 				 '<div class="span8">' +
