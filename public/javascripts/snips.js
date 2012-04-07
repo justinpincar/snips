@@ -148,7 +148,7 @@ $(function() {
 	    },
 
 	    saveSnippet: function(event) {
-		var content = this.$('textarea').val();
+		var content = $.trim(this.$('textarea').val());
 		var $label = this.$('.label');
 		$label.html("Saving...");
 
