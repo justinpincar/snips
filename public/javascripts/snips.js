@@ -3,14 +3,14 @@ $(function() {
 	if (typeof(subtitle) !== 'undefined') {
 	    title += ' <small>' + subtitle + '</small>';
 	}
-	
+
 	$('#title').html(
 			 '<div class="page-header">' +
 			 '<h3 id="inner-title">' + title + '</h3>' +
 			 '</div>'
 			 );
     };
-    
+
     window.humanizeDay = function(day) {
 	return Date.parse(day).toString('dddd, MMM d');
     };
@@ -110,12 +110,8 @@ $(function() {
 	    },
 	});
 
-    window.MeView = Backbone.View.extend({
+    window.EditSnipView = Backbone.View.extend({
 	    template: _.template(
-				 '<div class="row">' +
-				 '<div class="span8 offset2 well">' +
-
-				 "<% _.each(teams, function(team) { %>" +
 				 '<form class="form-horizontal" onsubmit="return false;">' +
 				 '<fieldset>' +
 				 '<div class="row">' +
@@ -123,19 +119,15 @@ $(function() {
 				 '<div class="control-group">' +
 				 '<label class="control-label" for="textarea"><%= team.name %></label>' +
 				 '<div class="controls">' +
-				 '<textarea style="width: 100%" id="team-<%= team.id %>-snippet" rows="4" placeholder="What did you do on this day?" data-team-id="<%= team.id %>"></textarea>' +
+				 '<textarea style="width: 100%" rows="4" placeholder="What did you do on this day?"><%= model.get("content") %></textarea>' +
 				 '</div>' +
-				 '</div>' + 
-				 "<button class='btn save-snippet pull-right' data-team-id='<%= team.id %>'>Save</button>" +
-				 '<span id="team-<%= team.id %>-label" class="label label-info pull-right" style="margin-right: 6px">Unchanged</span>' +
+				 '</div>' +
+				 "<button class='btn save-snippet pull-right'>Save</button>" +
+				 '<span class="label label-info pull-right" style="margin-right: 6px">Unchanged</span>' +
 				 '</div>' +
 				 '</div>' +
 				 '</fieldset>' +
-				 '</form>' +
-				 "<% }) %>" +
-
-				 '</div>' +
-				 '</div>'
+				 '</form>'
 				 ),
 
 	    events: {
@@ -143,51 +135,25 @@ $(function() {
 		"keyup textarea": "setStatus"
 	    },
 
-	    initialize: function(day) {
-		this.day = day;
+	    initialize: function(data) {
+		_.bindAll(this, "saveSnippet", "setStatus", "render");
 
-		_.bindAll(this, "loadSnippets", "saveSnippet", "setStatus", "render", "onClose");
+		this.model = data.snip;
+		this.team = data.team;
 	    },
 
 	    render: function() {
-		setTitle(CurrentUser.get('nickname'), humanizeDay(this.day));
-		$(this.el).html(this.template({teams: CurrentUser.get('teams')}));
-
-		UserSnips.on("reset", this.loadSnippets);
-		UserSnips.fetch({data: {user_id: CurrentUser.id, day: this.day}});
-
+		$(this.el).html(this.template({model: this.model, team: this.team}));
 		return this;
 	    },
 
-	    loadSnippets: function(event) {
-		UserSnips.each(function(snip) {
-			$('#team-' + snip.get('team_id') + '-snippet').val(snip.get('content'));
-			$('#team-' + snip.get('team_id') + '-snippet').attr('data-snip-id', snip.id);
-		    });
-	    },
-
 	    saveSnippet: function(event) {
-		var teamId = $(event.currentTarget).attr('data-team-id');
-		var snipId = this.$('#team-' + teamId + '-snippet').attr('data-snip-id');
-		var content = this.$('#team-' + teamId + '-snippet').val();
-		var $label = this.$('#team-' + teamId + '-label');
+		var content = this.$('textarea').val();
+		var $label = this.$('.label');
 		$label.html("Saving...");
 
-		var snip;
-		if (typeof(snipId) === 'undefined') {
-		    attrs = {
-			user_id: CurrentUser.id,
-			content: content,
-			day: getCurrentDay(),
-			team_id: teamId
-		    };
-		    snip = new Snip(attrs);
-		} else {
-		    snip = UserSnips.get(snipId);
-		    attrs = {content: content};
-		}
-
-		snip.save(attrs, {
+		var attrs = {content: content};
+		this.model.save(attrs, {
 			success: function(model, response) {
 			    $label.removeClass("label-info");
 			    $label.removeClass("label-important");
@@ -204,11 +170,59 @@ $(function() {
 	    },
 
 	    setStatus: function(event) {
-		var teamId = $(event.currentTarget).attr('data-team-id');
-		var $label = this.$('#team-' + teamId + '-label');
+		var $label = this.$('.label');
 		$label.removeClass("label-info label-success");
 		$label.addClass("label-warning");
 		$label.html("Unsaved");
+	    }
+	});
+
+    window.MeView = Backbone.View.extend({
+	    template: _.template(
+				 '<div class="row">' +
+				 '<div id="edit-snips" class="span8 offset2 well">' +
+				 '</div>' +
+				 '</div>'
+				 ),
+
+	    initialize: function(day) {
+		this.day = day;
+
+		_.bindAll(this, "loadSnippets", "render", "onClose");
+
+		UserSnips.on("reset", this.loadSnippets);
+		UserSnips.fetch({data: {user_id: CurrentUser.id, day: this.day}});
+	    },
+
+	    render: function() {
+		setTitle(CurrentUser.get('nickname'), humanizeDay(this.day));
+
+		$(this.el).html(this.template());
+
+		return this;
+	    },
+
+	    loadSnippets: function() {
+		var teams = CurrentUser.get("teams");
+		for (var i = 0; i < teams.length; i++) {
+		    var team = teams[i];
+
+		    var snips = UserSnips.where({team_id: team.id});
+		    var snip;
+		    if (snips.length > 0) {
+			snip = snips[0];
+		    } else {
+			attrs = {
+			    user_id: CurrentUser.id,
+			    day: getCurrentDay(),
+			    team_id: team.id
+			};
+			snip = new Snip(attrs);
+		    }
+
+		    var editView = new EditSnipView({snip: snip, team: team}).render().el;
+		    $('#edit-snips').append(editView);
+		}
 	    },
 
 	    onClose: function() {
@@ -361,7 +375,7 @@ $(function() {
 				 '<div class="btn-group">' +
 				 '<a class="btn btn-large dropdown-toggle" data-toggle="dropdown" href="#"><i class="icon-user"></i> Sign In <span class="caret"></span></a>' +
 				 '<ul class="dropdown-menu">' +
-				 
+
 				 "<% _.each(users, function(user) { %><li><a href='#' class='user' data-user-id='<%= user.id %>'><%= user.get('nickname') %></a></li><% }) %>" +
 
 				 '</ul>' +
